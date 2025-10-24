@@ -1,0 +1,399 @@
+#--------------------------------------------------------------------------------------------------------------------------------
+# local variables and resources for Azure AI Search
+#-------------------------------------------------------------------------------------------------------------------------------- 
+locals {
+  # aiq-{env}-{service_type}-{number} -> remove hyphens and lowercase for storage account naming rules
+  base_name = format("aiq-common-%s-%s", 
+  
+  var.service_type,
+  var.project_unique_id)
+
+  azurerm_search_service_name = lower(local.base_name)
+}
+
+#--------------------------------------------------------------------------------------------------------------------------------
+# Azure AI Search Resources
+#--------------------------------------------------------------------------------------------------------------------------------
+
+resource "azurerm_search_service" "this" {
+  name                = local.azurerm_search_service_name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  sku                 = var.sku
+  replica_count       = var.replica_count
+  partition_count     = var.partition_count
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = var.tags
+}
+
+# Create Search Index using REST API via local-exec
+resource "null_resource" "search_index" {
+  count = var.create_index ? 1 : 0
+
+  # Create the index JSON file
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command = <<-EOF
+      cat > /tmp/search_index.json << 'JSON_EOF'
+{
+  "name": "${var.index_name}",
+  "fields": [
+    {
+      "name": "id",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": true,
+      "facetable": true,
+      "key": true,
+      "synonymMaps": []
+    },
+    {
+      "name": "title",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": true,
+      "facetable": true,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "content",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "keywords",
+      "type": "Collection(Edm.String)",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "metadata_storage_path",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "metadata_storage_name",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": true,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "lastModified",
+      "type": "Edm.DateTimeOffset",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": true,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "acl",
+      "type": "Collection(Edm.String)",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": false,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "acl_emails",
+      "type": "Collection(Edm.String)",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "acl_display_names",
+      "type": "Collection(Edm.String)",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "embeddingVector",
+      "type": "Collection(Edm.Single)",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "dimensions": ${var.vector_dimensions},
+      "vectorSearchProfile": "${var.vector_search_profile_name}",
+      "synonymMaps": []
+    },
+    {
+      "name": "siteId",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": true,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "driveId",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "itemId",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "documentSource",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "documentType",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": true,
+      "facetable": true,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "acl_fingerprint",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "synonymMaps": []
+    },
+    {
+      "name": "pageNumber",
+      "type": "Edm.Int32",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": true,
+      "facetable": true,
+      "key": false,
+      "synonymMaps": []
+    }
+  ],
+  "corsOptions": {
+    "allowedOrigins": ["*"],
+    "maxAgeInSeconds": 300
+  },
+  "semantic": {
+    "configurations": [
+      {
+        "name": "${var.semantic_config_name}",
+        "prioritizedFields": {
+          "titleField": {
+            "fieldName": "${var.title_field_name}"
+          },
+          "prioritizedContentFields": [
+            ${join(",\n            ", [for field in var.content_field_names : "{\"fieldName\": \"${field}\"}"])}
+          ],
+          "prioritizedKeywordsFields": [
+            ${join(",\n            ", [for field in var.keywords_field_names : "{\"fieldName\": \"${field}\"}"])}
+          ]
+        }
+      }
+    ]
+  },
+  "vectorSearch": {
+    "algorithms": [
+      {
+        "name": "${var.vector_search_algorithm_name}",
+        "kind": "hnsw",
+        "hnswParameters": {
+          "metric": "${var.hnsw_parameters.metric}",
+          "m": ${var.hnsw_parameters.m},
+          "efConstruction": ${var.hnsw_parameters.efConstruction},
+          "efSearch": ${var.hnsw_parameters.efSearch}
+        }
+      }
+    ],
+    "profiles": [
+      {
+        "name": "${var.vector_search_profile_name}",
+        "algorithm": "${var.vector_search_algorithm_name}"
+      }
+    ]
+  }
+}
+JSON_EOF
+    EOF
+  }
+
+  # Create the index using Azure CLI or curl
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command = <<-EOF
+      set -e  # Exit on any error
+      
+      # Function to check if search service is ready
+      wait_for_service() {
+        local max_attempts=12
+        local attempt=1
+        
+        while [ $attempt -le $max_attempts ]; do
+          echo "Attempt $attempt: Checking if search service is ready..."
+          
+          STATUS_CODE=$(curl -s -o /dev/null -w "%%{http_code}" \
+            "https://${azurerm_search_service.this.name}.search.windows.net/servicestats?api-version=2023-11-01" \
+            -H "api-key: ${azurerm_search_service.this.primary_key}")
+          
+          if [ "$STATUS_CODE" = "200" ]; then
+            echo "Search service is ready!"
+            return 0
+          fi
+          
+          echo "Service not ready (HTTP $STATUS_CODE), waiting 30 seconds..."
+          sleep 30
+          attempt=$((attempt + 1))
+        done
+        
+        echo "ERROR: Search service failed to become ready after $max_attempts attempts"
+        exit 1
+      }
+      
+      # Wait for search service to be ready
+      wait_for_service
+      
+      echo "Creating index with the following JSON:"
+      cat /tmp/search_index.json
+      echo "=========================="
+      
+      # Validate JSON syntax
+      if ! python3 -m json.tool /tmp/search_index.json > /dev/null 2>&1; then
+        echo "ERROR: Invalid JSON syntax in index definition"
+        exit 1
+      fi
+      
+      # Create index using curl with proper error handling
+      HTTP_CODE=$(curl -X POST \
+        "https://${azurerm_search_service.this.name}.search.windows.net/indexes?api-version=2023-11-01" \
+        -H "Content-Type: application/json" \
+        -H "api-key: ${azurerm_search_service.this.primary_key}" \
+        -d @/tmp/search_index.json \
+        -w "%%{http_code}" \
+        -o /tmp/response.json \
+        -s)
+      
+      echo "HTTP Response Code: $HTTP_CODE"
+      echo "Response Body:"
+      cat /tmp/response.json
+      
+      # Check if creation was successful
+      case "$HTTP_CODE" in
+        200|201)
+          echo "✅ Index '${var.index_name}' created successfully"
+          ;;
+        400)
+          echo "❌ Bad Request: Invalid index definition"
+          cat /tmp/response.json
+          exit 1
+          ;;
+        401)
+          echo "❌ Unauthorized: Invalid API key"
+          exit 1
+          ;;
+        409)
+          echo "⚠️  Index already exists - this is expected behavior"
+          ;;
+        *)
+          echo "❌ Index creation failed with HTTP code: $HTTP_CODE"
+          cat /tmp/response.json
+          exit 1
+          ;;
+      esac
+      
+      # Clean up temporary files
+      rm -f /tmp/response.json
+    EOF
+  }
+
+  # Clean up temporary file
+  provisioner "local-exec" {
+    when    = destroy
+    command = "rm -f /tmp/search_index.json"
+  }
+
+  depends_on = [azurerm_search_service.this]
+
+  triggers = {
+    search_service_id = azurerm_search_service.this.id
+    index_config     = jsonencode({
+      name                     = var.index_name
+      openai_resource_uri      = var.openai_resource_uri
+      openai_deployment_id     = var.openai_deployment_id
+    })
+  }
+}
+
+
