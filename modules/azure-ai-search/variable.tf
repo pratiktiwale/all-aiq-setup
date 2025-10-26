@@ -161,4 +161,31 @@ variable "keywords_field_names" {
   default     = ["keywords"]
 }
 
+# RBAC Configuration Variables
+variable "allowed_ips" {
+  description = "List of allowed IP addresses for network access control"
+  type        = list(string)
+  default     = []
+}
 
+variable "managed_identity_principal_id" {
+  description = "Principal ID of the User-Assigned Managed Identity for RBAC assignments"
+  type        = string
+}
+
+# OpenAI Vectorizer Configuration
+variable "openai_vectorizer_name" {
+  description = "Name of the OpenAI vectorizer for Azure AI Search"
+  type        = string
+  default     = "openai-vectorizer"
+}
+
+variable "openai_endpoint" {
+  description = "Azure OpenAI endpoint URL for vectorizer"
+  type        = string
+}
+
+variable "openai_embedding_deployment_name" {
+  description = "Azure OpenAI embedding deployment name for vectorizer"
+  type        = string
+}

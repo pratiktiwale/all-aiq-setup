@@ -23,11 +23,43 @@ resource "azurerm_search_service" "this" {
   replica_count       = var.replica_count
   partition_count     = var.partition_count
 
+  # Disable API key authentication completely - RBAC only
+  local_authentication_enabled = false
+  
   identity {
     type = "SystemAssigned"
   }
 
+  # Enable public network access (can be restricted with IP allowlists)
+  public_network_access_enabled = true
+  allowed_ips                  = var.allowed_ips
+
   tags = var.tags
+}
+
+#--------------------------------------------------------------------------------------------------------------------------------
+# RBAC Role Assignments for Managed Identity Access
+#--------------------------------------------------------------------------------------------------------------------------------
+
+# Search Service Contributor - for administrative operations
+resource "azurerm_role_assignment" "search_service_contributor" {
+  scope                = azurerm_search_service.this.id
+  role_definition_name = "Search Service Contributor"
+  principal_id         = var.managed_identity_principal_id
+}
+
+# Search Index Data Contributor - for index data operations
+resource "azurerm_role_assignment" "search_index_data_contributor" {
+  scope                = azurerm_search_service.this.id
+  role_definition_name = "Search Index Data Contributor"
+  principal_id         = var.managed_identity_principal_id
+}
+
+# Search Index Data Reader - for read operations
+resource "azurerm_role_assignment" "search_index_data_reader" {
+  scope                = azurerm_search_service.this.id
+  role_definition_name = "Search Index Data Reader"
+  principal_id         = var.managed_identity_principal_id
 }
 
 # Create Search Index using REST API via local-exec
@@ -281,7 +313,19 @@ resource "null_resource" "search_index" {
     "profiles": [
       {
         "name": "${var.vector_search_profile_name}",
-        "algorithm": "${var.vector_search_algorithm_name}"
+        "algorithm": "${var.vector_search_algorithm_name}",
+        "vectorizer": "${var.openai_vectorizer_name}"
+      }
+    ],
+    "vectorizers": [
+      {
+        "name": "${var.openai_vectorizer_name}",
+        "kind": "azureOpenAI",
+        "azureOpenAIParameters": {
+          "resourceUri": "${var.openai_endpoint}",
+          "deploymentId": "${var.openai_embedding_deployment_name}",
+          "modelName": "text-embedding-ada-002"
+        }
       }
     ]
   }
@@ -304,9 +348,17 @@ JSON_EOF
         while [ $attempt -le $max_attempts ]; do
           echo "Attempt $attempt: Checking if search service is ready..."
           
-          STATUS_CODE=$(curl -s -o /dev/null -w "%%{http_code}" \
-            "https://${azurerm_search_service.this.name}.search.windows.net/servicestats?api-version=2023-11-01" \
-            -H "api-key: ${azurerm_search_service.this.primary_key}")
+          # Use Azure CLI authentication with Bearer token (RBAC only)
+          ACCESS_TOKEN=$(az account get-access-token --resource=https://search.azure.com/ --query accessToken -o tsv 2>/dev/null || echo "")
+          
+          if [ -n "$ACCESS_TOKEN" ]; then
+            STATUS_CODE=$(curl -s -o /dev/null -w "%%{http_code}" \
+              "https://${azurerm_search_service.this.name}.search.windows.net/servicestats?api-version=2024-07-01" \
+              -H "Authorization: Bearer $ACCESS_TOKEN")
+          else
+            echo "Failed to get access token, trying again..."
+            STATUS_CODE="401"
+          fi
           
           if [ "$STATUS_CODE" = "200" ]; then
             echo "Search service is ready!"
@@ -335,11 +387,13 @@ JSON_EOF
         exit 1
       fi
       
-      # Create index using curl with proper error handling
+      # Create index using Azure CLI authentication with Bearer token (RBAC only)
+      ACCESS_TOKEN=$(az account get-access-token --resource=https://search.azure.com/ --query accessToken -o tsv)
+      
       HTTP_CODE=$(curl -X POST \
-        "https://${azurerm_search_service.this.name}.search.windows.net/indexes?api-version=2023-11-01" \
+        "https://${azurerm_search_service.this.name}.search.windows.net/indexes?api-version=2024-07-01" \
         -H "Content-Type: application/json" \
-        -H "api-key: ${azurerm_search_service.this.primary_key}" \
+        -H "Authorization: Bearer $ACCESS_TOKEN" \
         -d @/tmp/search_index.json \
         -w "%%{http_code}" \
         -o /tmp/response.json \
@@ -360,7 +414,7 @@ JSON_EOF
           exit 1
           ;;
         401)
-          echo "❌ Unauthorized: Invalid API key"
+          echo "❌ Unauthorized: Authentication failed"
           exit 1
           ;;
         409)

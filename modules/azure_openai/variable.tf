@@ -38,44 +38,7 @@ variable "tags" {
 # Azure OpenAI Specific Variables
 
 #----------------------------------------------------------------------------------------------------------------
-# New Variables for GPT Deployment
-#----------------------------------------------------------------------------------------------------------------
-
-variable "gpt_deployment_name" {
-  description = "The name of the GPT deployment."
-  type        = string
-}
-
-variable "gpt_model_name" {
-  description = "The name of the GPT model."
-  type        = string
-}
-
-variable "gpt_model_version" {
-  description = "The version of the GPT model."
-  type        = string
-}
-
-variable "gpt_sku_name" {
-  description = "The SKU name for the GPT deployment (Standard or GlobalStandard)."
-  type        = string
-  default     = "Standard"
-}
-
-variable "gpt_capacity" {
-  description = "The capacity for the GPT deployment."
-  type        = number
-  default     = 1
-}
-
-variable "gpt_rate_limit_count" {
-  description = "The rate limit count for the GPT deployment."
-  type        = number
-  default     = 1000
-}
-
-#----------------------------------------------------------------------------------------------------------------
-# New Variables for Embedding Deployment
+# Variables for Embedding Deployment
 #----------------------------------------------------------------------------------------------------------------
 variable "embedding_deployment_name" {
   description = "The name of the embedding deployment."

@@ -27,3 +27,8 @@ output "primary_key" {
   value       = azurerm_cosmosdb_account.main.primary_key
   sensitive   = true
 }
+
+output "database_name" {
+  description = "The name of the created Cosmos DB database"
+  value       = azurerm_cosmosdb_sql_database.main.name
+}

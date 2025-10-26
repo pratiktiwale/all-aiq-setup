@@ -4,16 +4,14 @@
 #--------------------------------------------------------------------------------------------------------------------------------
 
 locals {
-  # Construct the base name: aiq-{env}-{service-type}-{resource-use}-{number}
+  # Construct the base name: aiq-{env}-cosmos-{number} (per documentation)
   base_name = format(
-    "aiq-%s-%s-%s",
+    "aiq-%s-cosmos-%s",
     var.env_code,
-    var.service_type,
-    #var.resource_use,
     var.resource_number
   )
   # Cosmos DB account name must be globally unique and lowercase
-  cosmos_account_name = lower(replace(local.base_name, "-", "")) # Azure limitation: CosmosDB names cannot have hyphens
+  cosmos_account_name = lower(local.base_name)
 }
 
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -42,10 +40,19 @@ resource "azurerm_cosmosdb_account" "main" {
 #--------------------------------------------------------------------------------------------------------------------------------
 
 resource "azurerm_cosmosdb_sql_database" "main" {
-  name                = "aiq-${var.env_code}-db-01"
+  name                = "aiq-${var.env_code}-db-1"
   resource_group_name = var.resource_group_name
   account_name        = azurerm_cosmosdb_account.main.name
-  throughput          = var.database_throughput
+  
+  # Conditional throughput configuration based on use_autoscale
+  throughput = var.use_autoscale ? null : var.database_throughput
+  
+  dynamic "autoscale_settings" {
+    for_each = var.use_autoscale ? [1] : []
+    content {
+      max_throughput = var.database_max_throughput
+    }
+  }
 }
 
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -68,14 +75,15 @@ resource "azurerm_cosmosdb_sql_container" "containers" {
 }
 
 #--------------------------------------------------------------------------------------------------------------------------------
-# 4. Data Plane RBAC Role Assignments for Managed Identity
+# 4. Container-Level Data Plane RBAC Role Assignments for Managed Identity (Per Documentation)
 #--------------------------------------------------------------------------------------------------------------------------------
 
 # Get current subscription ID for role definition
 data "azurerm_client_config" "current" {}
 
-# Data Plane RBAC assignment for the entire account
-resource "azurerm_cosmosdb_sql_role_assignment" "managed_identity_data_contributor" {
+# Container-level RBAC assignments for each container (as per documentation requirements)
+resource "azurerm_cosmosdb_sql_role_assignment" "container_data_contributor" {
+  count               = length(var.container_definitions)
   resource_group_name = var.resource_group_name
   account_name        = azurerm_cosmosdb_account.main.name
   
@@ -84,8 +92,8 @@ resource "azurerm_cosmosdb_sql_role_assignment" "managed_identity_data_contribut
   
   principal_id = var.managed_identity_principal_id
   
-  # Full Azure resource scope for the entire Cosmos DB account
-  scope = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.DocumentDB/databaseAccounts/${azurerm_cosmosdb_account.main.name}"
+  # Container-level scope: /dbs/{database_name}/colls/{container_name}
+  scope = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.DocumentDB/databaseAccounts/${azurerm_cosmosdb_account.main.name}/dbs/${azurerm_cosmosdb_sql_database.main.name}/colls/${var.container_definitions[count.index].name}"
   
   depends_on = [
     azurerm_cosmosdb_sql_container.containers,

@@ -31,7 +31,7 @@ variable "usage" {
 variable "project_unique_id" {
   description = "A unique, short identifier (e.g., a few random letters/numbers) to guarantee globally unique Web App names."
   type        = string
-  default     = "lrm" # CHANGE THIS DEFAULT TO SOMETHING TRULY UNIQUE
+  default     = "lrm" 
 }
 
 # Authentication and App Registration Variables

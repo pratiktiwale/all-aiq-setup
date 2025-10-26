@@ -130,11 +130,11 @@ module "cosmosdb" {
   resource_group_name = azurerm_resource_group.main.name
   location            = var.location
 
-  # Naming Convention Components: aiq-{env}-cosmosdb-be-01
+  # Naming Convention Components: aiq-{env}-cosmos-1
   env_code        = lower(var.environment) # Convert to lowercase for naming (e.g., "dev", "prod")
   service_type    = "cosmosdb"             # Hardcoded string value (matches default in module, but good practice to be explicit)
   resource_use    = "be"                   # Resource Use (Backend uses the DB)
-  resource_number = "01"                   # Number suffix
+  resource_number = "1"                    # Number suffix (matches documentation format)
 
   # Pass the managed identity principal ID for Data Plane RBAC
   managed_identity_principal_id = module.managed_identity.managed_identity_principal_id
@@ -203,14 +203,20 @@ module "backend_api" {
     # Key Vault
     "AZURE_KEY_VAULT_NAME" = module.key_vault.key_vault_name
 
-    # Azure OpenAI
-    "AZURE_OPENAI_DEPLOYMENT" = "gpt-4o"
+    # Azure OpenAI (using standalone service)
+    "AZURE_OPENAI_DEPLOYMENT" = module.azure_openai.embedding_deployment_name
     "AZURE_OPENAI_ENDPOINT"   = module.azure_openai.endpoint
+
+    # Azure AI Foundry
+    "AZURE_AI_FOUNDRY_ENDPOINT" = module.azure_ai_foundry.ai_foundry_endpoint
+
+    # Azure Document Intelligence
+    "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT" = module.document_intelligence.endpoint
 
     # Azure AI Search
     "AZURE_SEARCH_ENDPOINT"   = module.azure_ai_search.search_service_url
     "AZURE_SEARCH_INDEX_NAME" = var.azure_search_index_name
-    "AZURE_SEARCH_KEY"        = module.azure_ai_search.search_service_primary_key
+    # Note: AZURE_SEARCH_KEY removed - using RBAC authentication via managed identity
 
     # SharePoint Configuration
     "AZURE_SHAREPOINT_DOCUMENT_LIBRARY_NAME" = var.azure_sharepoint_document_library_name
@@ -223,10 +229,10 @@ module "backend_api" {
 
     # Cosmos DB
     "COSMOS_CONTAINER_NAME"               = "conversations"
-    "COSMOS_DATABASE_NAME"                = "chat-db"
+    "COSMOS_DATABASE_NAME"                = module.cosmosdb.database_name
     "COSMOS_ENDPOINT"                     = module.cosmosdb.endpoint
     "COSMOS_STARTER_QUERY_CONTAINER_NAME" = "starter_queries"
-    "COSMOS_STARTER_QUERY_DATABASE_NAME"  = "search"
+    "COSMOS_STARTER_QUERY_DATABASE_NAME"  = module.cosmosdb.database_name
 
     # Pipeline and Processing Configuration
     "INDEXER_PIPELINE_ID"            = "9"
@@ -375,37 +381,65 @@ module "blob_storage" {
   }
 }
 
+#--------------------------------------------------------------------------------------------------------------------------------
+# Azure AI Foundry Module Call
+#--------------------------------------------------------------------------------------------------------------------------------
+
+module "azure_ai_foundry" {
+  source = "./modules/azure-ai-foundry"
+
+  location            = "West Europe"
+  resource_group_name = azurerm_resource_group.main.name
+
+  resource_use      = "ai"
+  project_unique_id = var.project_unique_id
+
+  # GPT-4o Deployment Configuration
+  gpt4_deployment_name = "gpt-4o-foundry"
+  gpt4_model_name      = "gpt-4o"
+  gpt4_model_version   = "2024-08-06"
+  gpt4_sku_name        = "GlobalStandard"
+  gpt4_capacity        = 50
+
+  # Text Embedding Ada 002 Deployment Configuration
+  embedding_deployment_name = "text-embedding-ada-002-foundry"
+  embedding_model_name      = "text-embedding-ada-002"
+  embedding_model_version   = "2"
+  embedding_sku_name        = "GlobalStandard"
+  embedding_capacity        = 120
+
+  tags = {
+    "Usage"       = var.usage
+    "Environment" = "IAAC-${var.environment}"
+  }
+}
 
 #--------------------------------------------------------------------------------------------------------------------------------
-# Azure OpenAI Module Call
+# Azure OpenAI Service Module Call (Separate - Embedding Only)
 #--------------------------------------------------------------------------------------------------------------------------------
-
 
 module "azure_openai" {
   source = "./modules/azure_openai"
 
-  location            = "West Europe" # Changed from East US to try different quota pool
+  location            = "West Europe"  
   resource_group_name = azurerm_resource_group.main.name
 
   service_type      = "openai"
-  resource_use      = "ai"
+  resource_use      = "embed"
   project_unique_id = var.project_unique_id
 
-  gpt_deployment_name  = "gpt-4o-deployment"
-  gpt_model_name       = "gpt-4o"
-  gpt_model_version    = "2024-08-06"
-  gpt_sku_name         = "GlobalStandard" # Try GlobalStandard for different quota pool
-  gpt_capacity         = 50               # Reduced to match your quota limit: 50K tokens/minute
-  gpt_rate_limit_count = 10000            # Maximum: 10K requests/minute
+  # Embedding deployment configuration (only embedding, no GPT)
+  embedding_deployment_name = "text-embedding-ada-002-standalone"
+  embedding_model_name      = "text-embedding-ada-002"
+  embedding_model_version   = "2"
+  embedding_sku_name        = "GlobalStandard"
+  embedding_capacity        = 120
 
-  embedding_deployment_name  = "text-embedding-ada-002"
-  embedding_model_name       = "text-embedding-ada-002"
-  embedding_model_version    = "2"
-  embedding_sku_name         = "GlobalStandard" # Try GlobalStandard for different quota pool
-  embedding_capacity         = 240              # Reduced to match your quota limit: 240K tokens/minute
-  embedding_rate_limit_count = 50000            # Maximum: 50K requests/minute
+  tags = {
+    "Usage"       = var.usage
+    "Environment" = "IAAC-${var.environment}"
+  }
 }
-
 
 #--------------------------------------------------------------------------------------------------------------------------------
 # Azure AI Search Module Call
@@ -422,15 +456,22 @@ module "azure_ai_search" {
   service_type      = "search"
   project_unique_id = var.project_unique_id
 
+  # RBAC Configuration - Always enabled for enhanced security
+  managed_identity_principal_id = module.managed_identity.managed_identity_principal_id
 
   # Index Configuration - enabled for search index creation
   index_name   = "aiq-index"
   create_index = true
 
-  # Azure OpenAI Configuration for Vector Search (if needed later)
-  openai_resource_uri  = module.azure_openai.endpoint
-  openai_deployment_id = module.azure_openai.embedding_deployment_name
-  openai_model_name    = "text-embedding-ada-002"
+  # Azure OpenAI Configuration for Vector Search (using standalone service)
+  openai_resource_uri                = module.azure_openai.endpoint
+  openai_deployment_id              = module.azure_openai.embedding_deployment_name
+  openai_model_name                 = "text-embedding-ada-002"
+  
+  # Vectorizer Configuration (NEW)
+  openai_endpoint                   = module.azure_openai.openai_vectorizer_endpoint
+  openai_embedding_deployment_name  = module.azure_openai.embedding_deployment_name
+  openai_vectorizer_name            = "openai-vectorizer"
 
   tags = {
     "Usage"       = var.usage
@@ -498,9 +539,20 @@ module "key_vault" {
     "AZURE-OPENAI-ENDPOINT" = module.azure_openai.endpoint
     "AZURE-OPENAI-API-KEY"  = module.azure_openai.primary_access_key
 
+    # Azure AI Foundry
+    "AZURE-AI-FOUNDRY-ENDPOINT" = module.azure_ai_foundry.ai_foundry_endpoint
+    "AZURE-AI-FOUNDRY-API-KEY"  = module.azure_ai_foundry.ai_foundry_primary_key
+    
+    # Azure AI Foundry Deployments
+    "AZURE-AI-FOUNDRY-GPT4-DEPLOYMENT-NAME" = module.azure_ai_foundry.gpt4_deployment_name
+    "AZURE-AI-FOUNDRY-EMBEDDING-DEPLOYMENT-NAME" = module.azure_ai_foundry.embedding_deployment_name
+
+    # Azure Document Intelligence
+    "AZURE-DOCUMENT-INTELLIGENCE-ENDPOINT" = module.document_intelligence.endpoint
+    "AZURE-DOCUMENT-INTELLIGENCE-API-KEY"  = module.document_intelligence.primary_access_key
 
     "AZURE-SEARCH-ENDPOINT" = module.azure_ai_search.search_service_url
-    "AZURE-SEARCH-KEY"      = module.azure_ai_search.search_service_primary_key
+    # Note: AZURE-SEARCH-KEY removed - using RBAC authentication via managed identity
 
 
     "AZURE-STORAGE-ACCOUNT-KEY" = module.blob_storage.primary_access_key
@@ -556,7 +608,7 @@ module "function_app" {
     # Azure Document Intelligence
     "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT" = module.document_intelligence.endpoint
 
-    # Azure OpenAI
+    # Azure OpenAI (using standalone service)
     "AZURE_OPENAI_ENDPOINT" = module.azure_openai.endpoint
 
     # Azure AI Search
@@ -579,7 +631,7 @@ module "function_app" {
 
     # Cosmos DB
     "COSMOS_CONTAINER_NAME" = "conversations"
-    "COSMOS_DB_NAME"        = "searchindex-delta"
+    "COSMOS_DB_NAME"        = module.cosmosdb.database_name
     "COSMOS_ENDPOINT"       = module.cosmosdb.endpoint
     "COSMOS_KEY"            = module.cosmosdb.primary_key
 
@@ -650,25 +702,27 @@ resource "azurerm_role_assignment" "managed_identity_cosmosdb_reader" {
   principal_id         = module.managed_identity.managed_identity_principal_id
 }
 
-# Azure AI Search Service - Search Index Data Contributor
-resource "azurerm_role_assignment" "managed_identity_search_contributor" {
-  scope                = module.azure_ai_search.search_service_id
-  role_definition_name = "Search Index Data Contributor"
-  principal_id         = module.managed_identity.managed_identity_principal_id
-}
+# Note: Azure AI Search RBAC assignments are now handled within the azure-ai-search module
 
-# Azure OpenAI Service - Cognitive Services Contributor
-resource "azurerm_role_assignment" "managed_identity_openai_contributor" {
+# Standalone Azure OpenAI Service (Embedding Only) - Cognitive Services Contributor
+resource "azurerm_role_assignment" "managed_identity_standalone_openai_contributor" {
   scope                = module.azure_openai.cognitive_account_id
   role_definition_name = "Cognitive Services Contributor"
   principal_id         = module.managed_identity.managed_identity_principal_id
 }
 
-# Azure OpenAI Service - Cognitive Services OpenAI Contributor
-resource "azurerm_role_assignment" "managed_identity_openai_openai_contributor" {
+# Standalone Azure OpenAI Service (Embedding Only) - Cognitive Services OpenAI Contributor
+resource "azurerm_role_assignment" "managed_identity_standalone_openai_openai_contributor" {
   scope                = module.azure_openai.cognitive_account_id
   role_definition_name = "Cognitive Services OpenAI Contributor"
   principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+# Azure AI Search System Identity - Access to OpenAI for Vectorizers
+resource "azurerm_role_assignment" "search_openai_user" {
+  scope                = module.azure_openai.cognitive_account_id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = module.azure_ai_search.search_service_principal_id
 }
 
 # Azure Document Intelligence Service - Cognitive Services Contributor
@@ -684,6 +738,24 @@ resource "azurerm_role_assignment" "managed_identity_redis_contributor" {
   role_definition_name = "Redis Cache Contributor"
   principal_id         = module.managed_identity.managed_identity_principal_id
 }
+
+
+
+# Azure AI Foundry - Cognitive Services User Access
+resource "azurerm_role_assignment" "managed_identity_ai_foundry_user" {
+  scope                = module.azure_ai_foundry.ai_foundry_id
+  role_definition_name = "Cognitive Services User"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+# Azure AI Foundry - Cognitive Services Contributor Access
+resource "azurerm_role_assignment" "managed_identity_ai_foundry_contributor" {
+  scope                = module.azure_ai_foundry.ai_foundry_id
+  role_definition_name = "Cognitive Services Contributor"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+
 
 /*
 #--------------------------------------------------------------------------------------------------------------------------------

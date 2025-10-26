@@ -27,15 +27,27 @@ variable "resource_use" {
 }
 
 variable "resource_number" {
-  description = "The number suffix (e.g., 01, 02)."
+  description = "The number suffix (e.g., 1, 2) - matches documentation format."
   type        = string
-  default     = "01"
+  default     = "1"
 }
 
 variable "database_throughput" {
-  description = "The throughput (RU/s) to apply to the SQL database for shared capacity."
+  description = "The throughput (RU/s) to apply to the SQL database for shared capacity. Set to null to use autoscale."
   type        = number
-  default     = 1000 # Example shared throughput value
+  default     = 1000 # Manual throughput as per documentation
+}
+
+variable "database_max_throughput" {
+  description = "The maximum throughput (RU/s) for autoscale mode. Only used if database_throughput is null."
+  type        = number
+  default     = 4000
+}
+
+variable "use_autoscale" {
+  description = "Whether to use autoscale throughput instead of manual throughput."
+  type        = bool
+  default     = false
 }
 
 # --- Resource Configuration Variables ---

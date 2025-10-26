@@ -2,10 +2,6 @@ output "cognitive_account_id" {
   value = azurerm_cognitive_account.openai.id
 }
 
-output "gpt_deployment_id" {
-  value = azurerm_cognitive_deployment.gpt.id
-}
-
 output "embedding_deployment_id" {
   value = azurerm_cognitive_deployment.embedding.id
 }
@@ -26,7 +22,7 @@ output "embedding_deployment_name" {
   value       = azurerm_cognitive_deployment.embedding.name
 }
 
-output "gpt_deployment_name" {
-  description = "The name of the GPT deployment"
-  value       = azurerm_cognitive_deployment.gpt.name
+output "openai_vectorizer_endpoint" {
+  description = "The OpenAI vectorizer-compatible endpoint URL"
+  value       = "https://${azurerm_cognitive_account.openai.name}.openai.azure.com/"
 }

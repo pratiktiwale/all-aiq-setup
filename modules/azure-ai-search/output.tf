@@ -12,16 +12,9 @@ output "search_service_url" {
   value       = "https://${azurerm_search_service.this.name}.search.windows.net"
 }
 
-output "search_service_primary_key" {
-  description = "The primary admin key for the Azure AI Search service"
-  value       = azurerm_search_service.this.primary_key
-  sensitive   = true
-}
-
-output "search_service_query_keys" {
-  description = "The query keys for the Azure AI Search service"
-  value       = azurerm_search_service.this.query_keys
-  sensitive   = true
+output "search_service_principal_id" {
+  description = "The principal ID of the search service's system-assigned managed identity"
+  value       = azurerm_search_service.this.identity[0].principal_id
 }
 
 output "index_name" {

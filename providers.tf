@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.116.0" # Last stable version with reliable classic Application Insights support
+      version = "~> 4.0" # Latest version with AIServices support
     }
   }
 }
