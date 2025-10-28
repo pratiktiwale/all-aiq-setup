@@ -24,6 +24,9 @@ resource "azurerm_cognitive_account" "ai_foundry" {
   # Enable public network access
   public_network_access_enabled = true
   
+  # Add custom subdomain for vectorizer compatibility
+  custom_subdomain_name = local.foundry_name
+  
   # Set identity for the cognitive account
   identity {
     type = "SystemAssigned"

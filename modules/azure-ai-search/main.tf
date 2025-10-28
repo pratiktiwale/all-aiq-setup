@@ -324,7 +324,8 @@ resource "null_resource" "search_index" {
         "azureOpenAIParameters": {
           "resourceUri": "${var.openai_endpoint}",
           "deploymentId": "${var.openai_embedding_deployment_name}",
-          "modelName": "text-embedding-ada-002"
+          "modelName": "text-embedding-ada-002",
+          "authIdentity": null
         }
       }
     ]
@@ -390,6 +391,22 @@ JSON_EOF
       # Create index using Azure CLI authentication with Bearer token (RBAC only)
       ACCESS_TOKEN=$(az account get-access-token --resource=https://search.azure.com/ --query accessToken -o tsv)
       
+      # First delete the existing index to update with new vectorizer configuration
+      DELETE_CODE=$(curl -X DELETE \
+        "https://${azurerm_search_service.this.name}.search.windows.net/indexes/${var.index_name}?api-version=2024-07-01" \
+        -H "Authorization: Bearer $ACCESS_TOKEN" \
+        -w "%%{http_code}" \
+        -s)
+
+      echo "Delete HTTP Response Code: $DELETE_CODE"
+
+      if [ "$DELETE_CODE" = "204" ] || [ "$DELETE_CODE" = "404" ]; then
+        echo "✅ Existing index deleted or didn't exist"
+      else
+        echo "⚠️  Delete returned code $DELETE_CODE, continuing anyway"
+      fi
+
+      # Now create the index with new configuration
       HTTP_CODE=$(curl -X POST \
         "https://${azurerm_search_service.this.name}.search.windows.net/indexes?api-version=2024-07-01" \
         -H "Content-Type: application/json" \
@@ -406,7 +423,7 @@ JSON_EOF
       # Check if creation was successful
       case "$HTTP_CODE" in
         200|201)
-          echo "✅ Index '${var.index_name}' created successfully"
+          echo "✅ Index '${var.index_name}' created successfully with vectorizer"
           ;;
         400)
           echo "❌ Bad Request: Invalid index definition"
@@ -418,7 +435,9 @@ JSON_EOF
           exit 1
           ;;
         409)
-          echo "⚠️  Index already exists - this is expected behavior"
+          echo "❌ Index still exists - unexpected after deletion"
+          cat /tmp/response.json
+          exit 1
           ;;
         *)
           echo "❌ Index creation failed with HTTP code: $HTTP_CODE"

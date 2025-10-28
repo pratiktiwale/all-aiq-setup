@@ -29,6 +29,9 @@ resource "azurerm_cognitive_account" "openai" {
   # Enable public network access for vectorizer integration
   public_network_access_enabled = true
   
+  # Add custom subdomain for vectorizer compatibility
+  custom_subdomain_name = local.azurerm_cognitive_account_name
+  
   # Set identity for the cognitive account
   identity {
     type = "SystemAssigned"

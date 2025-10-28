@@ -62,9 +62,6 @@ resource "azurerm_cosmosdb_sql_database" "main" {
 resource "azurerm_cosmosdb_sql_container" "containers" {
   count               = length(var.container_definitions)
   
-  # REMOVED: container_config = var.container_definitions[count.index] 
-  # ACCESSING VALUES DIRECTLY using var.container_definitions[count.index].<attribute>
-  
   name                = var.container_definitions[count.index].name
   resource_group_name = var.resource_group_name
   account_name        = azurerm_cosmosdb_account.main.name

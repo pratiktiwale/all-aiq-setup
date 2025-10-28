@@ -388,7 +388,7 @@ module "blob_storage" {
 module "azure_ai_foundry" {
   source = "./modules/azure-ai-foundry"
 
-  location            = "West Europe"
+  location            = "East US 2"
   resource_group_name = azurerm_resource_group.main.name
 
   resource_use      = "ai"
@@ -421,7 +421,7 @@ module "azure_ai_foundry" {
 module "azure_openai" {
   source = "./modules/azure_openai"
 
-  location            = "West Europe"  
+  location            = "East US 2"  
   resource_group_name = azurerm_resource_group.main.name
 
   service_type      = "openai"
@@ -702,36 +702,6 @@ resource "azurerm_role_assignment" "managed_identity_cosmosdb_reader" {
   principal_id         = module.managed_identity.managed_identity_principal_id
 }
 
-# Note: Azure AI Search RBAC assignments are now handled within the azure-ai-search module
-
-# Standalone Azure OpenAI Service (Embedding Only) - Cognitive Services Contributor
-resource "azurerm_role_assignment" "managed_identity_standalone_openai_contributor" {
-  scope                = module.azure_openai.cognitive_account_id
-  role_definition_name = "Cognitive Services Contributor"
-  principal_id         = module.managed_identity.managed_identity_principal_id
-}
-
-# Standalone Azure OpenAI Service (Embedding Only) - Cognitive Services OpenAI Contributor
-resource "azurerm_role_assignment" "managed_identity_standalone_openai_openai_contributor" {
-  scope                = module.azure_openai.cognitive_account_id
-  role_definition_name = "Cognitive Services OpenAI Contributor"
-  principal_id         = module.managed_identity.managed_identity_principal_id
-}
-
-# Azure AI Search System Identity - Access to OpenAI for Vectorizers
-resource "azurerm_role_assignment" "search_openai_user" {
-  scope                = module.azure_openai.cognitive_account_id
-  role_definition_name = "Cognitive Services OpenAI User"
-  principal_id         = module.azure_ai_search.search_service_principal_id
-}
-
-# Azure Document Intelligence Service - Cognitive Services Contributor
-resource "azurerm_role_assignment" "managed_identity_document_intelligence_contributor" {
-  scope                = module.document_intelligence.document_intelligence_id
-  role_definition_name = "Cognitive Services Contributor"
-  principal_id         = module.managed_identity.managed_identity_principal_id
-}
-
 # Azure Cache for Redis - Redis Cache Contributor
 resource "azurerm_role_assignment" "managed_identity_redis_contributor" {
   scope                = module.redis_cache.id
@@ -739,7 +709,40 @@ resource "azurerm_role_assignment" "managed_identity_redis_contributor" {
   principal_id         = module.managed_identity.managed_identity_principal_id
 }
 
+# Azure AI Search System Identity - Access to OpenAI for Vectorizers (kept for vectorizer functionality)
+resource "azurerm_role_assignment" "search_openai_user" {
+  scope                = module.azure_openai.cognitive_account_id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = module.azure_ai_search.search_service_principal_id
+}
 
+# Managed Identity - Access to OpenAI for vectorizer operations
+resource "azurerm_role_assignment" "managed_identity_openai_user" {
+  scope                = module.azure_openai.cognitive_account_id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+# Search Index Data Reader - Resource Group Access
+resource "azurerm_role_assignment" "search_index_data_reader_rg" {
+  scope                = azurerm_resource_group.main.id
+  role_definition_name = "Search Index Data Reader"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+# Azure AI Foundry - Cognitive Services Contributor Access
+resource "azurerm_role_assignment" "managed_identity_ai_foundry_contributor" {
+  scope                = module.azure_ai_foundry.ai_foundry_id
+  role_definition_name = "Cognitive Services Contributor"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+# Azure AI Foundry - Cognitive Services OpenAI Contributor Access
+resource "azurerm_role_assignment" "managed_identity_ai_foundry_openai_contributor" {
+  scope                = module.azure_ai_foundry.ai_foundry_id
+  role_definition_name = "Cognitive Services OpenAI Contributor"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
 
 # Azure AI Foundry - Cognitive Services User Access
 resource "azurerm_role_assignment" "managed_identity_ai_foundry_user" {
@@ -748,10 +751,24 @@ resource "azurerm_role_assignment" "managed_identity_ai_foundry_user" {
   principal_id         = module.managed_identity.managed_identity_principal_id
 }
 
-# Azure AI Foundry - Cognitive Services Contributor Access
-resource "azurerm_role_assignment" "managed_identity_ai_foundry_contributor" {
+# Azure AI Foundry - Azure AI Account Owner Access (First assignment)
+resource "azurerm_role_assignment" "managed_identity_ai_foundry_account_owner_1" {
   scope                = module.azure_ai_foundry.ai_foundry_id
-  role_definition_name = "Cognitive Services Contributor"
+  role_definition_name = "Azure AI Account Owner"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+# Azure AI Foundry - Cognitive Services OpenAI User Access
+resource "azurerm_role_assignment" "managed_identity_ai_foundry_openai_user" {
+  scope                = module.azure_ai_foundry.ai_foundry_id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+# Search Service - Azure AI Account Owner Access
+resource "azurerm_role_assignment" "search_service_ai_account_owner" {
+  scope                = module.azure_ai_search.search_service_id
+  role_definition_name = "Azure AI Account Owner"
   principal_id         = module.managed_identity.managed_identity_principal_id
 }
 
