@@ -3,7 +3,7 @@
 # 1. Locals for Naming Convention
 #----------------------------------------------------------------------------------------------------------------
 locals {
-  # Construct the base name: aiq-{env}-{service-type}-{resource-use}-{project_unique_id}-{number}
+  # Construct the base name: aiq-{env}-{service-type}-{project_unique_id}-{number}
   base_name = format(
     "aiq-%s-%s-%s-%s",
     var.env_code,
@@ -15,39 +15,36 @@ locals {
   # Function App names must be globally unique and lowercase
   function_app_name = lower(local.base_name)
   
+  # Storage account name (must be globally unique, lowercase, no hyphens)
+  storage_account_name = lower(replace("aiq${var.env_code}funcst${var.project_unique_id}${var.resource_number}", "-", ""))
 }
 
 #----------------------------------------------------------------------------------------------------------------
-# 2. Service Plan (Basic)
-#----------------------------------------------------------------------------------------------------------------
-
-resource "azurerm_service_plan" "basic" {
-  name                = "aiq-funcapp-basic-plan"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  os_type             = "Linux"
-  sku_name            = "B1"  # Basic plan SKU (smallest basic tier)
-  
-  tags = var.tags
-}
-
-#----------------------------------------------------------------------------------------------------------------
-# 3. Storage Account (Required for Function App)
+# 2. Storage Account (Required for Function App)
 #----------------------------------------------------------------------------------------------------------------
 
 resource "azurerm_storage_account" "function_storage" {
-  name                     = "aiqfuncstorage"
+  name                     = local.storage_account_name
   resource_group_name      = var.resource_group_name
   location                 = var.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
+  
+  tags = var.tags
+}
+
+resource "azurerm_storage_container" "deployments" {
+  name                  = "function-deployments"
+  storage_account_id    = azurerm_storage_account.function_storage.id
+  container_access_type = "private"
 }
 
 #----------------------------------------------------------------------------------------------------------------
-# 4. Application Insights
+# 3. Application Insights
 #----------------------------------------------------------------------------------------------------------------
 
 resource "azurerm_application_insights" "function_insights" {
+  count               = var.enable_app_insights ? 1 : 0
   name                = "${local.function_app_name}-insights"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -60,51 +57,47 @@ resource "azurerm_application_insights" "function_insights" {
 }
 
 #----------------------------------------------------------------------------------------------------------------
-# 5. Linux Function App with Premium Plan
+# 4. Service Plan (Flex Consumption)
 #----------------------------------------------------------------------------------------------------------------
 
-resource "azurerm_linux_function_app" "main" {
-  name                       = local.function_app_name
-  location                   = var.location
-  resource_group_name        = var.resource_group_name
-  service_plan_id            = azurerm_service_plan.basic.id
+resource "azurerm_service_plan" "flex_consumption" {
+  name                = "${local.function_app_name}-plan"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  os_type             = "Linux"
+  sku_name            = "FC1"
   
-  storage_account_name       = azurerm_storage_account.function_storage.name
-  storage_account_access_key = azurerm_storage_account.function_storage.primary_access_key
+  tags = var.tags
+}
+
+#----------------------------------------------------------------------------------------------------------------
+# 5. Flex Consumption Function App
+#----------------------------------------------------------------------------------------------------------------
+
+resource "azurerm_function_app_flex_consumption" "main" {
+  name                = local.function_app_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  service_plan_id     = azurerm_service_plan.flex_consumption.id
+
+  storage_container_type      = "blobContainer"
+  storage_container_endpoint  = "${azurerm_storage_account.function_storage.primary_blob_endpoint}${azurerm_storage_container.deployments.name}"
+  storage_authentication_type = "StorageAccountConnectionString"
+  storage_access_key          = azurerm_storage_account.function_storage.primary_access_key
+  
+  runtime_name           = "python"
+  runtime_version        = "3.11"
+  instance_memory_in_mb  = 512
+  maximum_instance_count = var.maximum_instance_count
   
   tags = var.tags
   
-  site_config {
-    # Application Insights config
-    application_insights_key               = azurerm_application_insights.function_insights.instrumentation_key
-    application_insights_connection_string = azurerm_application_insights.function_insights.connection_string
-    
-    # Application stack configuration
-    application_stack {
-      python_version = "3.11"
-    }
-    
-    # Premium plan configuration
-    ftps_state        = "Disabled"
-    use_32_bit_worker = false
-  }
+  site_config {}
 
-  # Environment variables and application settings
   app_settings = merge({
-    # Required Function App settings
-    "FUNCTIONS_WORKER_RUNTIME"     = "python"
-    "FUNCTIONS_EXTENSION_VERSION"  = "~4"
-    "WEBSITE_RUN_FROM_PACKAGE"     = "1"
-    
-    # Python version specification
-    "PYTHON_VERSION"               = "3.11"
-    
-    # Storage connection string
-    "AzureWebJobsStorage" = azurerm_storage_account.function_storage.primary_connection_string
-    
     # Application Insights settings
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.function_insights.connection_string
-    "APPINSIGHTS_INSTRUMENTATIONKEY"       = azurerm_application_insights.function_insights.instrumentation_key
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = var.enable_app_insights ? azurerm_application_insights.function_insights[0].connection_string : ""
+    "APPINSIGHTS_INSTRUMENTATIONKEY"       = var.enable_app_insights ? azurerm_application_insights.function_insights[0].instrumentation_key : ""
   },
   # Add user-defined environment variables
   var.app_settings

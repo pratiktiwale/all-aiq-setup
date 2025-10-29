@@ -14,9 +14,9 @@ variable "env_code" {
 }
 
 variable "service_type" {
-  description = "The service type (e.g., functionapp, func)"
+  description = "The service type (e.g., function, func)"
   type        = string
-  default     = "func"
+  default     = "function"
 }
 
 variable "project_unique_id" {
@@ -28,6 +28,12 @@ variable "resource_number" {
   description = "The number suffix (e.g., 01, 02)"
   type        = string
   default     = "01"
+}
+
+variable "maximum_instance_count" {
+  description = "Maximum number of instances for the function app"
+  type        = number
+  default     = 100
 }
 
 variable "app_settings" {
@@ -43,9 +49,9 @@ variable "tags" {
 }
 
 variable "enable_app_insights" {
-  description = "Enable creation and wiring of Application Insights for this web app."
+  description = "Enable creation and wiring of Application Insights for this function app"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "log_analytics_workspace_id" {

@@ -469,9 +469,9 @@ module "azure_ai_search" {
   openai_model_name    = "text-embedding-ada-002"
 
   # Vectorizer Configuration - Ensures automatic model deployment selection
-  openai_endpoint         = module.azure_openai.openai_vectorizer_endpoint
-  openai_deployment_name  = module.azure_openai.embedding_deployment_name  # "text-embedding-ada-002-standalone"
-  openai_vectorizer_name  = "openai-vectorizer"
+  openai_endpoint        = module.azure_openai.openai_vectorizer_endpoint
+  openai_deployment_name = module.azure_openai.embedding_deployment_name # "text-embedding-ada-002-standalone"
+  openai_vectorizer_name = "openai-vectorizer"
 
   tags = {
     "Usage"       = var.usage
@@ -593,8 +593,6 @@ module "function_app" {
 
   # Function App Environment Variables
   app_settings = {
-    # Application Insights (will be overridden by module's built-in setting)
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = "" # Module handles this automatically
 
     # Azure Blob Storage
     "AZURE_BLOB_CONTAINER_NAME"      = var.azure_storage_container_name
@@ -619,9 +617,6 @@ module "function_app" {
     "AZURE_SHAREPOINT_DOCUMENT_LIBRARY_NAME" = var.azure_sharepoint_document_library_name
     "AZURE_SHAREPOINT_DOMAIN"                = var.azure_sharepoint_domain
     "AZURE_SHAREPOINT_SITE_NAME"             = var.azure_sharepoint_site_name
-
-    # Storage (will be overridden by module's built-in setting)
-    "AzureWebJobsStorage" = "" # Module handles this automatically
 
     # Processing Configuration
     "BATCH_SIZE"         = "200"
