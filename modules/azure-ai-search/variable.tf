@@ -92,7 +92,7 @@ variable "openai_resource_uri" {
 variable "openai_deployment_id" {
   description = "Azure OpenAI deployment ID for text embeddings"
   type        = string
-  default     = "text-embedding-ada-002"
+  default     = "text-embedding-ada-002-standalone"
 }
 
 variable "openai_model_name" {
@@ -185,7 +185,7 @@ variable "openai_endpoint" {
   type        = string
 }
 
-variable "openai_embedding_deployment_name" {
+variable "openai_deployment_name" {
   description = "Azure OpenAI embedding deployment name for vectorizer"
   type        = string
 }

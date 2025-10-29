@@ -421,7 +421,7 @@ module "azure_ai_foundry" {
 module "azure_openai" {
   source = "./modules/azure_openai"
 
-  location            = "East US 2"  
+  location            = "East US 2"
   resource_group_name = azurerm_resource_group.main.name
 
   service_type      = "openai"
@@ -464,14 +464,14 @@ module "azure_ai_search" {
   create_index = true
 
   # Azure OpenAI Configuration for Vector Search (using standalone service)
-  openai_resource_uri                = module.azure_openai.endpoint
-  openai_deployment_id              = module.azure_openai.embedding_deployment_name
-  openai_model_name                 = "text-embedding-ada-002"
-  
-  # Vectorizer Configuration (NEW)
-  openai_endpoint                   = module.azure_openai.openai_vectorizer_endpoint
-  openai_embedding_deployment_name  = module.azure_openai.embedding_deployment_name
-  openai_vectorizer_name            = "openai-vectorizer"
+  openai_resource_uri  = module.azure_openai.endpoint
+  openai_deployment_id = module.azure_openai.embedding_deployment_name
+  openai_model_name    = "text-embedding-ada-002"
+
+  # Vectorizer Configuration - Ensures automatic model deployment selection
+  openai_endpoint         = module.azure_openai.openai_vectorizer_endpoint
+  openai_deployment_name  = module.azure_openai.embedding_deployment_name  # "text-embedding-ada-002-standalone"
+  openai_vectorizer_name  = "openai-vectorizer"
 
   tags = {
     "Usage"       = var.usage
@@ -542,9 +542,9 @@ module "key_vault" {
     # Azure AI Foundry
     "AZURE-AI-FOUNDRY-ENDPOINT" = module.azure_ai_foundry.ai_foundry_endpoint
     "AZURE-AI-FOUNDRY-API-KEY"  = module.azure_ai_foundry.ai_foundry_primary_key
-    
+
     # Azure AI Foundry Deployments
-    "AZURE-AI-FOUNDRY-GPT4-DEPLOYMENT-NAME" = module.azure_ai_foundry.gpt4_deployment_name
+    "AZURE-AI-FOUNDRY-GPT4-DEPLOYMENT-NAME"      = module.azure_ai_foundry.gpt4_deployment_name
     "AZURE-AI-FOUNDRY-EMBEDDING-DEPLOYMENT-NAME" = module.azure_ai_foundry.embedding_deployment_name
 
     # Azure Document Intelligence
@@ -769,6 +769,20 @@ resource "azurerm_role_assignment" "managed_identity_ai_foundry_openai_user" {
 resource "azurerm_role_assignment" "search_service_ai_account_owner" {
   scope                = module.azure_ai_search.search_service_id
   role_definition_name = "Azure AI Account Owner"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+# Azure Document Intelligence - Cognitive Services User Access (for Function App)
+resource "azurerm_role_assignment" "managed_identity_document_intelligence_user" {
+  scope                = module.document_intelligence.document_intelligence_id
+  role_definition_name = "Cognitive Services User"
+  principal_id         = module.managed_identity.managed_identity_principal_id
+}
+
+# Azure Blob Storage - Storage Blob Data Reader Access (for preview functionality)
+resource "azurerm_role_assignment" "managed_identity_storage_blob_reader" {
+  scope                = module.blob_storage.storage_account_id
+  role_definition_name = "Storage Blob Data Reader"
   principal_id         = module.managed_identity.managed_identity_principal_id
 }
 

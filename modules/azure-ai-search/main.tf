@@ -280,18 +280,19 @@ resource "null_resource" "search_index" {
     "maxAgeInSeconds": 300
   },
   "semantic": {
+    "defaultConfiguration": "default-semantic-config",
     "configurations": [
       {
-        "name": "${var.semantic_config_name}",
+        "name": "default-semantic-config",
         "prioritizedFields": {
           "titleField": {
-            "fieldName": "${var.title_field_name}"
+            "fieldName": "title"
           },
           "prioritizedContentFields": [
-            ${join(",\n            ", [for field in var.content_field_names : "{\"fieldName\": \"${field}\"}"])}
+            {"fieldName": "content"}
           ],
           "prioritizedKeywordsFields": [
-            ${join(",\n            ", [for field in var.keywords_field_names : "{\"fieldName\": \"${field}\"}"])}
+            {"fieldName": "keywords"}
           ]
         }
       }
@@ -323,9 +324,8 @@ resource "null_resource" "search_index" {
         "kind": "azureOpenAI",
         "azureOpenAIParameters": {
           "resourceUri": "${var.openai_endpoint}",
-          "deploymentId": "${var.openai_embedding_deployment_name}",
-          "modelName": "text-embedding-ada-002",
-          "authIdentity": null
+          "deploymentId": "${var.openai_deployment_name}",
+          "modelName": "${var.openai_model_name}"
         }
       }
     ]

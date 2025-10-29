@@ -40,17 +40,9 @@ resource "azuread_application" "main" {
   required_resource_access {
     resource_app_id = "00000003-0000-0000-c000-000000000000" # Microsoft Graph
 
-    # Delegated Permissions
+    # Delegated Permissions (Pending Admin Consent)
     resource_access {
       id   = "64a6cdd6-aab1-4aaf-94b8-3cc8405e90d0" # email
-      type = "Scope"
-    }
-    resource_access {
-      id   = "df85f4d6-205c-4ac5-a5ea-6bf408dba283" # Files.Read.All
-      type = "Scope"
-    }
-    resource_access {
-      id   = "7427e0e9-2fba-42fe-b0c0-848c9e6a8182" # offline_access
       type = "Scope"
     }
     resource_access {
@@ -65,8 +57,12 @@ resource "azuread_application" "main" {
       id   = "e1fe6dd8-ba31-4d61-89e7-88639da4683d" # User.Read
       type = "Scope"
     }
+    resource_access {
+      id   = "7427e0e9-2fba-42fe-b0c0-848c9e6a8182" # offline_access
+      type = "Scope"
+    }
 
-    # Application Permissions
+    # Application Permissions (Granted - Active)
     resource_access {
       id   = "5b567255-7703-4780-807c-7be8301ae99b" # Group.Read.All
       type = "Role"
@@ -81,6 +77,14 @@ resource "azuread_application" "main" {
     }
     resource_access {
       id   = "df021288-bdef-4463-88db-98f22de89214" # User.Read.All
+      type = "Role"
+    }
+    resource_access {
+      id   = "75359482-378d-4052-8f01-80520e7db3cd" # Files.Read.All
+      type = "Role"
+    }
+    resource_access {
+      id   = "678536fe-1083-478a-9c59-b99265e6b0d3" # Sites.FullControl.All
       type = "Role"
     }
   }
