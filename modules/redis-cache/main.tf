@@ -21,8 +21,20 @@ resource "azurerm_redis_cache" "main" {
   sku_name = var.sku_name
   capacity = var.capacity
   family   = var.family
+  
 
   minimum_tls_version = var.minimum_tls_version
+  access_keys_authentication_enabled     = "false"
+
+  
+  # Enable system-assigned managed identity for Entra authentication
+  identity {
+    type = "SystemAssigned"
+  }
+
+  redis_configuration {
+    active_directory_authentication_enabled = "true"
+}
 
   tags = var.tags
 }
@@ -38,6 +50,5 @@ resource "azurerm_redis_cache_access_policy_assignment" "managed_identity_data_a
   object_id          = var.managed_identity_principal_id
   object_id_alias    = "aiq-managed-identity"
 }
-
 
 

@@ -47,7 +47,7 @@ variable "database_max_throughput" {
 variable "use_autoscale" {
   description = "Whether to use autoscale throughput instead of manual throughput."
   type        = bool
-  default     = false
+  default     = true
 }
 
 # --- Resource Configuration Variables ---
