@@ -9,7 +9,6 @@ variable "location" {
 }
 
 # Naming Convention Variables
-
 variable "resource_use" {
   description = "The usage of the resource (e.g., common, shared)."
   type        = string

@@ -1,3 +1,7 @@
+#------------------------------------------------------------------------------------------------------------
+# Output Attributes 
+#------------------------------------------------------------------------------------------------------------
+
 output "id" {
   description = "The ID of the shared App Service Plan."
   # This value exports the ID attribute of the resource created in main.tf

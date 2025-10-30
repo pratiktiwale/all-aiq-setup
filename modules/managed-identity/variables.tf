@@ -8,13 +8,11 @@ variable "location" {
   type        = string
 }
 
-
 variable "service_type" {
   description = "The service type (e.g., identity, mi)"
   type        = string
   default     = "mi"
 }
-
 
 variable "project_unique_id" {
   description = "Project unique identifier used in naming"

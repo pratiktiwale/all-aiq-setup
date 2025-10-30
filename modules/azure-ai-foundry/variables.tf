@@ -1,4 +1,3 @@
-# modules/azure-ai-foundry/variables.tf
 
 variable "location" {
   description = "The Azure region for the AI Foundry resources"
@@ -21,10 +20,6 @@ variable "project_unique_id" {
   type        = string
 }
 
-
-
-
-
 variable "tags" {
   description = "A mapping of tags to assign to the resources"
   type        = map(string)
@@ -34,6 +29,7 @@ variable "tags" {
 #----------------------------------------------------------------------------------------------------------------
 # Variables for GPT-4o Deployment
 #----------------------------------------------------------------------------------------------------------------
+
 variable "gpt4_deployment_name" {
   description = "The name of the GPT-4o deployment."
   type        = string
@@ -67,6 +63,7 @@ variable "gpt4_capacity" {
 #----------------------------------------------------------------------------------------------------------------
 # Variables for Embedding Deployment
 #----------------------------------------------------------------------------------------------------------------
+
 variable "embedding_deployment_name" {
   description = "The name of the embedding deployment."
   type        = string

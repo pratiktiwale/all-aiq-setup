@@ -1,17 +1,14 @@
 
-
 variable "service_type" {
   description = "The service type (e.g., app, appreg)"
   type        = string
   default     = "app"
 }
 
-
 variable "project_unique_id" {
   description = "Project unique identifier used in naming"
   type        = string
 }
-
 
 variable "description" {
   description = "Description for the app registration"

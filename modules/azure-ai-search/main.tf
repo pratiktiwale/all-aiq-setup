@@ -1,6 +1,7 @@
 #--------------------------------------------------------------------------------------------------------------------------------
 # local variables and resources for Azure AI Search
 #-------------------------------------------------------------------------------------------------------------------------------- 
+
 locals {
   # aiq-{env}-{service_type}-{number} -> remove hyphens and lowercase for storage account naming rules
   base_name = format("aiq-common-%s-%s", 

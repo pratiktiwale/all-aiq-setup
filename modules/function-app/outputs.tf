@@ -1,3 +1,7 @@
+#-----------------------------------------------------------------------------------------------------------
+# Output Attributes of Azure Function App
+#-----------------------------------------------------------------------------------------------------------
+
 output "function_app_id" {
   description = "The ID of the Function App"
   value       = azurerm_function_app_flex_consumption.main.id

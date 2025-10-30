@@ -63,16 +63,19 @@ variable "docker_registry_url" {
   description = "The login server URL (e.g., 'myacr.azurecr.io')."
   type        = string
 }
+
 variable "docker_username" {
   description = "The ACR Admin Username."
   type        = string
   sensitive   = true
 }
+
 variable "docker_password" {
   description = "The ACR Admin Password."
   type        = string
   sensitive   = true
 }
+
 variable "docker_startup_command" {
   description = "The command to run when the container starts (e.g., gunicorn...)."
   type        = string

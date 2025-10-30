@@ -1,4 +1,3 @@
-# modules/log-analytics-workspace/variables.tf
 
 #----------------------------------------------------------------------------------------------------------------
 # Core Infrastructure Variables

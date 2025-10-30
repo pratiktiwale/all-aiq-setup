@@ -1,3 +1,7 @@
+#-------------------------------------------------------------------------------------------------------------------------
+# Variable Definitions for Azure AIQ Setup
+#-------------------------------------------------------------------------------------------------------------------------
+
 variable "resource_group_name" {
   description = "The name of the Azure Resource Group to create (e.g., aiq-rg-common-eastus-01)."
   type        = string
@@ -21,8 +25,6 @@ variable "environment" {
   type        = string
 }
 
-
-
 variable "usage" {
   description = "The resource usage for the naming convention (e.g., 'Internal')."
   type        = string
@@ -34,7 +36,10 @@ variable "project_unique_id" {
   default     = "lrm"
 }
 
+#---------------------------------------------------------------------------------------------------------
 # Authentication and App Registration Variables
+#---------------------------------------------------------------------------------------------------------
+
 variable "tenant_id" {
   description = "The Azure AD tenant ID"
   type        = string
@@ -48,7 +53,10 @@ variable "required_group_id" {
   sensitive   = true
 }
 
+#---------------------------------------------------------------------------------------------------------
 # Azure DevOps Configuration
+#---------------------------------------------------------------------------------------------------------
+
 variable "azure_devops_org_url" {
   description = "The Azure DevOps organization URL"
   type        = string
@@ -67,14 +75,20 @@ variable "azure_devops_project" {
   type        = string
 }
 
+#---------------------------------------------------------------------------------------------------------
 # Azure AI Search Configuration
+#---------------------------------------------------------------------------------------------------------
+
 variable "azure_search_index_name" {
   description = "The name of the Azure AI Search index"
   type        = string
   default     = "documents"
 }
 
+#---------------------------------------------------------------------------------------------------------
 # SharePoint Configuration
+#---------------------------------------------------------------------------------------------------------
+
 variable "azure_sharepoint_document_library_name" {
   description = "The name of the SharePoint document library"
   type        = string
@@ -92,14 +106,20 @@ variable "azure_sharepoint_site_name" {
   type        = string
 }
 
+#---------------------------------------------------------------------------------------------------------
 # Storage Configuration
+#---------------------------------------------------------------------------------------------------------
+
 variable "azure_storage_container_name" {
   description = "The name of the Azure Storage container"
   type        = string
   default     = "documents"
 }
 
+#---------------------------------------------------------------------------------------------------------
 # Function App Specific Variables
+#---------------------------------------------------------------------------------------------------------
+
 variable "azure_client_secret_backup" {
   description = "Backup Azure client secret for function app authentication"
   type        = string
@@ -112,7 +132,10 @@ variable "sharepoint_site_url" {
   sensitive   = true
 }
 
+#---------------------------------------------------------------------------------------------------------
 # License and Keygen Variables
+#---------------------------------------------------------------------------------------------------------
+
 variable "keygen_public_key" {
   description = "The public key for Keygen license validation"
   type        = string

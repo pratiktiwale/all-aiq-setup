@@ -1,4 +1,3 @@
-# modules/log-analytics-workspace/outputs.tf
 
 #----------------------------------------------------------------------------------------------------------------
 # Log Analytics Workspace Outputs

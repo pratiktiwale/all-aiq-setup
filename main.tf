@@ -23,11 +23,11 @@ module "managed_identity" {
   location            = var.location
 
   # Naming Convention Components: aiq-{env}-mi-general-{project_unique_id}-01
-
   service_type      = "umi"
   project_unique_id = var.project_unique_id
   resource_number   = "01"
 
+  # Tags 
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -62,6 +62,7 @@ module "log_analytics_workspace" {
   enable_security_center    = true
   enable_azure_activity     = true
 
+  # Tags 
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -83,6 +84,7 @@ module "shared_plan" {
   # The required B3 SKU
   sku_name = "B3"
 
+  # Tags 
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -92,12 +94,14 @@ module "shared_plan" {
 #--------------------------------------------------------------------------------------------------------------------------------
 # Redis Cache Module Call
 #--------------------------------------------------------------------------------------------------------------------------------
+
 module "redis_cache" {
   source              = "./modules/redis-cache"
   resource_group_name = azurerm_resource_group.main.name
   location            = var.location
 
 
+  # Naming Components
   resource_number = "01"
 
   # Redis sizing - adjust for your environment
@@ -111,6 +115,7 @@ module "redis_cache" {
   # Pass the managed identity principal ID for data access policy
   managed_identity_principal_id = module.managed_identity.managed_identity_principal_id
 
+  # Tags 
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -139,10 +144,7 @@ module "cosmosdb" {
   # Pass the managed identity principal ID for Data Plane RBAC
   managed_identity_principal_id = module.managed_identity.managed_identity_principal_id
 
-  # Resource Configuration
-  # sql_database_name = "${var.env}-DB" # Database name (not part of the global resource name)
-
-  # Tags (Passed to the module to be applied to the Cosmos DB account)
+  # Tags 
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -179,9 +181,9 @@ module "backend_api" {
 
   # App Configuration
   service_plan_id = module.shared_plan.id
-  # Python version is specified in the Docker image, not runtime_stack
-
+  
   # Define environment variables (app_settings)
+
   app_settings = {
     # App Registration and Authentication
     #"API_AUDIENCE"      = "api://${module.app_registration.application_id}"
@@ -216,7 +218,7 @@ module "backend_api" {
     # Azure AI Search
     "AZURE_SEARCH_ENDPOINT"   = module.azure_ai_search.search_service_url
     "AZURE_SEARCH_INDEX_NAME" = var.azure_search_index_name
-    # Note: AZURE_SEARCH_KEY removed - using RBAC authentication via managed identity
+   
 
     # SharePoint Configuration
     "AZURE_SHAREPOINT_DOCUMENT_LIBRARY_NAME" = var.azure_sharepoint_document_library_name
@@ -304,9 +306,10 @@ module "frontend_app" {
 
   # App Configuration
   service_plan_id = module.shared_plan.id
-  # Python version is specified in the Docker image, not runtime_stack
+
 
   # Define environment variables (app_settings)
+
   app_settings = {
     # API Configuration - Backend Web App URL
     "API_URI" = "https://${module.backend_api.default_hostname}/api"
@@ -352,7 +355,7 @@ module "acr" {
   resource_number   = "01" # Number suffix
 
   # ACR Configuration
-  sku = "Premium" # Use Basic SKU for development/cost efficiency
+  sku = "Premium" 
 
   # Tags
   tags = {
@@ -375,6 +378,8 @@ module "blob_storage" {
   project_unique_id = var.project_unique_id
   resource_number   = "01"
 
+  # Tags 
+
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -391,6 +396,7 @@ module "azure_ai_foundry" {
   location            = "East US 2"
   resource_group_name = azurerm_resource_group.main.name
 
+  # Naming components
   resource_use      = "ai"
   project_unique_id = var.project_unique_id
 
@@ -408,6 +414,7 @@ module "azure_ai_foundry" {
   embedding_sku_name        = "GlobalStandard"
   embedding_capacity        = 120
 
+  # Tags
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -424,6 +431,7 @@ module "azure_openai" {
   location            = "East US 2"
   resource_group_name = azurerm_resource_group.main.name
 
+  # Naming components
   service_type      = "openai"
   resource_use      = "embed"
   project_unique_id = var.project_unique_id
@@ -435,6 +443,7 @@ module "azure_openai" {
   embedding_sku_name        = "GlobalStandard"
   embedding_capacity        = 120
 
+  # Tags
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -450,9 +459,9 @@ module "azure_ai_search" {
   source = "./modules/azure-ai-search"
 
   location = var.location
-  # Reference the resource group's name resource so Terraform enforces creation order
   resource_group_name = azurerm_resource_group.main.name
 
+  # Naming components
   service_type      = "search"
   project_unique_id = var.project_unique_id
 
@@ -473,6 +482,7 @@ module "azure_ai_search" {
   openai_deployment_name = module.azure_openai.embedding_deployment_name # "text-embedding-ada-002-standalone"
   openai_vectorizer_name = "openai-vectorizer"
 
+  # Tags
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -489,12 +499,14 @@ module "document_intelligence" {
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
 
+  # Naming components
   env_code          = lower(var.environment)
   project_unique_id = var.project_unique_id
 
   # Standard pricing tier for Document Intelligence
   sku_name = "S0"
 
+  # Tags
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -520,7 +532,7 @@ module "key_vault" {
   soft_delete_retention_days = var.enable_soft_delete_protection ? var.soft_delete_retention_days : 7
   purge_protection_enabled   = var.enable_purge_protection
 
-  # Key Vault secrets - mapped to Terraform modules and user inputs
+  # Key Vault secrets 
   secrets = {
     # Authentication & App Registration (Already exist - commented out)
     /*"API-AUDIENCE"      = "api://${module.app_registration.application_id}"
@@ -531,11 +543,11 @@ module "key_vault" {
     "TENANT-ID"         = var.tenant_id
     "REQUIRED-GROUP-ID" = var.required_group_id
 
-
+    # Azure DevOps
     "AZURE-DEVOPS-ORG-URL" = var.azure_devops_org_url
     "AZURE-DEVOPS-PAT"     = var.azure_devops_pat
 
-
+    # Azure OpenAI
     "AZURE-OPENAI-ENDPOINT" = module.azure_openai.endpoint
     "AZURE-OPENAI-API-KEY"  = module.azure_openai.primary_access_key
 
@@ -551,24 +563,28 @@ module "key_vault" {
     "AZURE-DOCUMENT-INTELLIGENCE-ENDPOINT" = module.document_intelligence.endpoint
     "AZURE-DOCUMENT-INTELLIGENCE-API-KEY"  = module.document_intelligence.primary_access_key
 
+    # Azure AI Search
     "AZURE-SEARCH-ENDPOINT" = module.azure_ai_search.search_service_url
-    # Note: AZURE-SEARCH-KEY removed - using RBAC authentication via managed identity
 
-
+    # Azure Storage
     "AZURE-STORAGE-ACCOUNT-KEY" = module.blob_storage.primary_access_key
 
-
+    # Cosmos DB
     "COSMOS-ENDPOINT"    = module.cosmosdb.endpoint
     "COSMOS-PRIMARY-KEY" = module.cosmosdb.primary_key
 
+    # Azure Container Registry 
     "DOCKER-REGISTRY-SERVER-PASSWORD" = module.acr.admin_password
 
+    # Redis Cache
     "REDIS-PASSWORD" = module.redis_cache.redis_primary_key
 
+    # Keygen
     "KEYGEN-PUBLIC-KEY" = var.keygen_public_key
     "LICENSE-KEY"       = var.license_key
   }
 
+  # TagsS
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"
@@ -585,10 +601,10 @@ module "function_app" {
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
 
+  # Naming components
   env_code        = lower(var.environment)
   service_type    = "function"
   resource_number = "01"
-
   project_unique_id = var.project_unique_id
 
   # Function App Environment Variables
@@ -649,6 +665,7 @@ module "function_app" {
     "UMI_CLIENT_ID" = module.managed_identity.managed_identity_client_id
   }
 
+  # Tags
   tags = {
     "Usage"       = var.usage
     "Environment" = "IAAC-${var.environment}"

@@ -1,4 +1,6 @@
-# modules/web-app/outputs.tf
+#--------------------------------------------------------------------------------------------------
+# Output Attributes of Linux Web App
+#--------------------------------------------------------------------------------------------------
 
 output "default_hostname" {
   description = "The public hostname (URL) of the deployed Linux Web App."

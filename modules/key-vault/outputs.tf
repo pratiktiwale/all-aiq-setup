@@ -1,3 +1,7 @@
+#--------------------------------------------------------------------------------------
+# Output Attributes of Azure Key Vault
+#--------------------------------------------------------------------------------------
+
 output "key_vault_id" {
   description = "The ID of the Key Vault"
   value       = azurerm_key_vault.main.id

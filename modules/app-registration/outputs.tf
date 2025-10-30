@@ -1,3 +1,7 @@
+#---------------------------------------------------------------------------------------------------
+# Output Attributes of Azure AD Application Registration
+#---------------------------------------------------------------------------------------------------
+
 output "application_id" {
   description = "The application ID (client ID) of the app registration"
   value       = azuread_application.main.client_id

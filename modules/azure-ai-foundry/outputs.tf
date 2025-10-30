@@ -1,4 +1,3 @@
-# modules/azure-ai-foundry/outputs.tf
 
 # Azure AI Foundry Outputs
 output "ai_foundry_id" {

@@ -1,6 +1,5 @@
 # modules/ai_search/variables.tf
 
-
 variable "resource_group_name" {
   description = "Resource group to create the storage account in"
   type        = string
@@ -10,7 +9,6 @@ variable "location" {
   description = "Azure region for the storage account"
   type        = string
 }
-
 
 variable "service_type" {
   description = "Service type string used in naming (e.g., 'search')"

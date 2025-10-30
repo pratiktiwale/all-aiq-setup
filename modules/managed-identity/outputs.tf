@@ -1,3 +1,7 @@
+#---------------------------------------------------------------------------------------------------------------------
+# Output Attributes of User Assigned Managed Identity
+#---------------------------------------------------------------------------------------------------------------------
+
 output "managed_identity_id" {
   description = "The ID of the user-assigned managed identity"
   value       = azurerm_user_assigned_identity.main.id

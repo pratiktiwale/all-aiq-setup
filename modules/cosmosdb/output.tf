@@ -1,4 +1,6 @@
-# modules/cosmosdb/outputs.tf
+#----------------------------------------------------------------------------------------------------------
+# Output Attributes of Azure Cosmos DB
+#----------------------------------------------------------------------------------------------------------
 
 output "primary_connection_string" {
   description = "The primary connection string for the Cosmos DB account."

@@ -35,11 +35,8 @@ variable "tags" {
   default     = {}
 }
 
-# Azure OpenAI Specific Variables
+# Azure OpenAI Specific Variables for Embedding Deployment
 
-#----------------------------------------------------------------------------------------------------------------
-# Variables for Embedding Deployment
-#----------------------------------------------------------------------------------------------------------------
 variable "embedding_deployment_name" {
   description = "The name of the embedding deployment."
   type        = string

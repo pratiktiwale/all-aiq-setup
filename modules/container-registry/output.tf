@@ -1,4 +1,6 @@
-# modules/acr/outputs.tf
+#---------------------------------------------------------------------------------------------
+# Output Attributes of Azure Container Registry
+#---------------------------------------------------------------------------------------------
 
 output "login_server" {
   description = "The login server URL (e.g., myregistry.azurecr.io)."

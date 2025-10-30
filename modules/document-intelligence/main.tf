@@ -6,7 +6,7 @@
 locals {
   # Construct the base name: aiq-{env}-docint-{project_unique_id}-01
   base_name = format(
-    "aiq-common-docint-lrm",  # Removed v4 suffix    
+    "aiq-common-docint-lrm",     
   )
   
   # Document Intelligence service name must be globally unique and lowercase

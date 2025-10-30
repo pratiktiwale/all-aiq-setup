@@ -34,13 +34,13 @@ variable "frontend_repo_name" {
   default     = "frontend-app"
 }
 
+variable "project_unique_id" {
+  description = "A unique project ID to ensure global uniqueness for the App Service name."
+  type        = string
+}
+
 variable "tags" {
   description = "A map of tags to assign to the ACR resource."
   type        = map(string)
   default     = {}
-}
-
-variable "project_unique_id" {
-  description = "A unique project ID to ensure global uniqueness for the App Service name."
-  type        = string
 }

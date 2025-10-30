@@ -1,3 +1,7 @@
+#---------------------------------------------------------------------------------------------------------
+# Output Attributes of Azure Document Intelligence
+#---------------------------------------------------------------------------------------------------------
+
 output "document_intelligence_id" {
   description = "The ID of the Document Intelligence cognitive account"
   value       = azurerm_cognitive_account.document_intelligence.id
